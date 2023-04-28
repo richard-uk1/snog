@@ -22,12 +22,12 @@
 //! The word 'snog' is as an informal name for a sloppy kiss in the UK. The code in the crate may
 //! or may not be sloppy.
 use std::ops::{Deref, DerefMut};
-pub use vello::{kurbo, peniko};
+pub use vello::{kurbo, peniko, SceneBuilder, SceneFragment};
 use vello::{
     kurbo::{Affine, Point, Size},
     peniko::Color,
     util::{RenderContext, RenderSurface},
-    Renderer, RendererOptions, Scene, SceneBuilder, SceneFragment,
+    Renderer, RendererOptions, Scene,
 };
 use winit::{
     dpi::LogicalPosition,
