@@ -127,51 +127,37 @@ impl<'a> DerefMut for RenderCtx<'a> {
     }
 }
 
-pub struct App<T = ()> {
-    render: Option<Box<dyn FnMut(&mut T, RenderCtx) + 'static>>,
-    event_handler: Box<dyn FnMut(&mut T, Event, &mut ControlFlow) + 'static>,
-    user_data: T,
+pub trait AppLogic {
+    fn render(&mut self, cx: &mut RenderCtx);
+    fn event(&mut self, event: Event, cf: &mut ControlFlow) {
+        if matches!(event, Event::CloseRequested) {
+            *cf = ControlFlow::Exit;
+        }
+    }
+}
+
+pub struct App<T> {
+    logic: T,
     screen: Option<Screen>,
 }
 
-impl App<()> {
+impl<T: 'static + Default> App<T> {
     pub fn new() -> Self {
-        Self::new_with_data(())
+        Self::new_with_data(T::default())
     }
 }
 
 impl<T: 'static> App<T> {
     pub fn new_with_data(user_data: T) -> Self {
-        fn default<T>(_: &mut T, event: Event, cf: &mut ControlFlow) {
-            if matches!(event, Event::CloseRequested) {
-                *cf = ControlFlow::Exit;
-            }
-        }
         Self {
-            render: None,
-            event_handler: Box::new(default),
-            user_data,
+            logic: user_data,
             screen: None,
         }
     }
+}
 
-    pub fn with_render(mut self, render: impl FnMut(&mut T, RenderCtx) + 'static) -> Self {
-        self.render = Some(Box::new(render));
-        self
-    }
-
-    pub fn with_event_handler(
-        mut self,
-        event_handler: impl FnMut(&mut T, Event, &mut ControlFlow) + 'static,
-    ) -> Self {
-        self.event_handler = Box::new(event_handler);
-        self
-    }
-
+impl<T: AppLogic + 'static> App<T> {
     pub fn run(mut self) {
-        let mut render = self.render.unwrap();
-        let mut event_handler = self.event_handler;
-
         let event_loop = EventLoop::new();
         let mut render_cx = RenderContext::new().unwrap();
 
@@ -247,11 +233,11 @@ impl<T: 'static> App<T> {
                     phy_size: Size::new(width as f64, height as f64),
                     scale_factor: 1.,
                 });
-                let ctx = RenderCtx {
+                let mut ctx = RenderCtx {
                     scene_builder: &mut builder,
                     screen: s,
                 };
-                render(&mut self.user_data, ctx);
+                self.logic.render(&mut ctx);
 
                 // If the user specifies a base color in the CLI we use that. Otherwise we use any
                 // color specified by the scene. The default is black.
@@ -341,7 +327,7 @@ impl<T: 'static> App<T> {
 
                 if let Some(screen) = self.screen {
                     if let Some(evt) = Event::from_winit_window(event, screen) {
-                        event_handler(&mut self.user_data, evt, control_flow);
+                        self.logic.event(evt, control_flow);
                     }
                 }
             }

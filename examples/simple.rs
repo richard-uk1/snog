@@ -1,26 +1,13 @@
 use rand::Rng;
 use snog::{
-    kurbo::{Affine, Circle, Line, Rect, Size},
-    peniko::{Brush, Color, Fill, Stroke},
-    App, RenderCtx,
+    kurbo::{Affine, Line, Size},
+    peniko::{Brush, Color, Stroke},
+    App, AppLogic, RenderCtx,
 };
 
 fn main() {
     let data = Data::new();
-    App::new_with_data(data).with_render(render).run()
-}
-
-// TODO both the lifetime of the RenderCtx and the ref to user data could be the same - nothing is
-// gained by having one longer than the other.
-fn render(data: &mut Data, mut ctx: RenderCtx<'_>) {
-    let Size { width, height } = ctx.screen().size();
-
-    let stroke = Stroke::new(2.);
-    let scale = Affine::scale_non_uniform(width, height);
-    for (line, color) in data.lines.iter().copied() {
-        let brush = Brush::Solid(color);
-        ctx.stroke(&stroke, Affine::IDENTITY, &brush, None, &(scale * line));
-    }
+    App::new_with_data(data).run()
 }
 
 struct Data {
@@ -43,5 +30,18 @@ impl Data {
             lines.push((line, color));
         }
         Data { lines }
+    }
+}
+
+impl AppLogic for Data {
+    fn render(&mut self, ctx: &mut RenderCtx) {
+        let Size { width, height } = ctx.screen().size();
+
+        let stroke = Stroke::new(2.);
+        let scale = Affine::scale_non_uniform(width, height);
+        for (line, color) in self.lines.iter().copied() {
+            let brush = Brush::Solid(color);
+            ctx.stroke(&stroke, Affine::IDENTITY, &brush, None, &(scale * line));
+        }
     }
 }
