@@ -128,7 +128,7 @@ impl<'a> DerefMut for RenderCtx<'a> {
 }
 
 pub trait AppLogic {
-    fn render(&mut self, cx: &mut RenderCtx);
+    fn render<'ctx>(&mut self, cx: &'ctx mut RenderCtx<'ctx>);
     fn event(&mut self, event: Event, cf: &mut ControlFlow) {
         if matches!(event, Event::CloseRequested) {
             *cf = ControlFlow::Exit;
