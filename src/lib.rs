@@ -30,14 +30,14 @@ use vello::{
     Renderer, RendererOptions, Scene,
 };
 use winit::{
-    dpi::LogicalPosition,
-    event::{Event as WEvent, WindowEvent},
+    dpi::{LogicalPosition, PhysicalPosition},
+    event::{Event as WEvent, ModifiersState, MouseScrollDelta, WindowEvent},
     event_loop::EventLoop,
     window::Window,
 };
 #[doc(inline)]
 pub use winit::{
-    event::{ElementState, MouseButton},
+    event::{ElementState, MouseButton, VirtualKeyCode},
     event_loop::ControlFlow,
 };
 
@@ -55,10 +55,18 @@ pub enum Event {
         state: ElementState,
         button: MouseButton,
     },
+    MouseWheel {
+        delta: f64,
+    },
+    KeyboardInput {
+        state: ElementState,
+        keycode: VirtualKeyCode,
+    },
     /// The window was resized or the scale factor changed.
     Resized {
         screen: Screen,
     },
+    ModifiersChanged(ModifiersState),
 }
 
 impl Event {
@@ -74,6 +82,26 @@ impl Event {
             WindowEvent::MouseInput { state, button, .. } => {
                 Some(Event::MouseInput { state, button })
             }
+            WindowEvent::MouseWheel { delta, .. } => {
+                // TODO bit of a hack to unify lines and pixels (assumes 20px line height)
+                match delta {
+                    MouseScrollDelta::PixelDelta(PhysicalPosition { y, .. }) => {
+                        Some(Event::MouseWheel {
+                            delta: (y / 20.).ceil(),
+                        })
+                    }
+                    MouseScrollDelta::LineDelta(_, y) => {
+                        Some(Event::MouseWheel { delta: y.into() })
+                    }
+                }
+            }
+            WindowEvent::KeyboardInput { input, .. } => {
+                input.virtual_keycode.map(|keycode| Event::KeyboardInput {
+                    keycode,
+                    state: input.state,
+                })
+            }
+            WindowEvent::ModifiersChanged(state) => Some(Event::ModifiersChanged(state)),
             WindowEvent::Resized { .. } | WindowEvent::ScaleFactorChanged { .. } => {
                 Some(Event::Resized { screen })
             }
@@ -128,7 +156,7 @@ impl<'a> DerefMut for RenderCtx<'a> {
 }
 
 pub trait AppLogic {
-    fn render<'ctx>(&mut self, cx: &'ctx mut RenderCtx<'ctx>);
+    fn render<'a>(&'a mut self, cx: &'a mut RenderCtx<'a>);
     fn event(&mut self, event: Event, cf: &mut ControlFlow) {
         if matches!(event, Event::CloseRequested) {
             *cf = ControlFlow::Exit;
