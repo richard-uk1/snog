@@ -206,7 +206,10 @@ impl<T: AppLogic + 'static> App<T> {
                 let size = window.inner_size();
                 let surface_future = render_cx.create_surface(&window, size.width, size.height);
                 // We need to block here, in case a Suspended event appeared
-                let surface = pollster::block_on(surface_future);
+                let Ok(surface) = pollster::block_on(surface_future) else {
+                    *control_flow = ControlFlow::ExitWithCode(1);
+                    return;
+                };
                 render_state = {
                     let render_state = RenderState { window, surface };
                     renderers.resize_with(render_cx.devices.len(), || None);
@@ -216,6 +219,7 @@ impl<T: AppLogic + 'static> App<T> {
                             &render_cx.devices[id].device,
                             &RendererOptions {
                                 surface_format: Some(render_state.surface.format),
+                                timestamp_period: 1.,
                             },
                         )
                         .expect("Couldn't create renderer")
