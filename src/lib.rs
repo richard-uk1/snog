@@ -220,7 +220,7 @@ impl<T: AppLogic + 'static> App<T> {
                             &RendererOptions {
                                 surface_format: Some(render_state.surface.format),
                                 timestamp_period: 1.,
-                                use_cpu: true,
+                                use_cpu: false,
                             },
                         )
                         .expect("Couldn't create renderer")
