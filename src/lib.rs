@@ -220,6 +220,7 @@ impl<T: AppLogic + 'static> App<T> {
                             &RendererOptions {
                                 surface_format: Some(render_state.surface.format),
                                 timestamp_period: 1.,
+                                use_cpu: true,
                             },
                         )
                         .expect("Couldn't create renderer")
@@ -242,7 +243,9 @@ impl<T: AppLogic + 'static> App<T> {
                 }
             }
             WEvent::RedrawRequested(_) => {
-                let Some(render_state) = &mut render_state else { return };
+                let Some(render_state) = &mut render_state else {
+                    return;
+                };
                 let width = render_state.surface.config.width;
                 let height = render_state.surface.config.height;
                 let device_handle = &render_cx.devices[render_state.surface.dev_id];
@@ -308,7 +311,9 @@ impl<T: AppLogic + 'static> App<T> {
                 device_handle.device.poll(wgpu::Maintain::Poll);
             }
             WEvent::WindowEvent { event, window_id } => {
-                let Some(render_state) = &mut render_state else { return };
+                let Some(render_state) = &mut render_state else {
+                    return;
+                };
                 if render_state.window.id() != window_id {
                     return;
                 }

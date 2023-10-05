@@ -1,7 +1,7 @@
 use rand::Rng;
 use snog::{
-    kurbo::{Affine, Line, Size},
-    peniko::{Brush, Color, Stroke},
+    kurbo::{Affine, Line, Size, Stroke},
+    peniko::{Brush, Color},
     App, AppLogic, RenderCtx,
 };
 
