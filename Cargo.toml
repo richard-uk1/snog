@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 pollster = "0.3.0"
-vello = { git = "https://github.com/linebender/vello", version = "0.0.1", rev = "34483eb787c5e3d43a940ac999b0ba98653f6a0e" }
+vello = { git = "https://github.com/linebender/vello", version = "0.0.1", rev = "ec8867a" }
 wgpu = "0.17.0"
 winit = "0.28.2"
 

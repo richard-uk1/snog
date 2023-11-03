@@ -26,8 +26,9 @@ pub use vello::{kurbo, peniko, SceneBuilder, SceneFragment};
 use vello::{
     kurbo::{Affine, Point, Size},
     peniko::Color,
+    AaConfig,
     util::{RenderContext, RenderSurface},
-    Renderer, RendererOptions, Scene,
+    Renderer, RendererOptions, Scene, AaSupport,
 };
 use winit::{
     dpi::{LogicalPosition, PhysicalPosition},
@@ -217,10 +218,11 @@ impl<T: AppLogic + 'static> App<T> {
                     renderers[id].get_or_insert_with(|| {
                         Renderer::new(
                             &render_cx.devices[id].device,
-                            &RendererOptions {
+                            RendererOptions {
                                 surface_format: Some(render_state.surface.format),
                                 timestamp_period: 1.,
                                 use_cpu: false,
+                                antialiasing_support: AaSupport::area_only(),
                             },
                         )
                         .expect("Couldn't create renderer")
@@ -280,6 +282,7 @@ impl<T: AppLogic + 'static> App<T> {
                     base_color: Color::BLACK,
                     width,
                     height,
+                    antialiasing_method: AaConfig::Area,
                 };
                 let mut builder = SceneBuilder::for_scene(&mut scene);
                 // We apply scaling to the fragment to account for screen scale factor
