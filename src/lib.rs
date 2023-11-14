@@ -22,13 +22,13 @@
 //! The word 'snog' is as an informal name for a sloppy kiss in the UK. The code in the crate may
 //! or may not be sloppy.
 use std::ops::{Deref, DerefMut};
+use text::SimpleText;
 pub use vello::{kurbo, peniko, SceneBuilder, SceneFragment};
 use vello::{
-    kurbo::{Affine, Point, Size},
+    kurbo::{Affine, Point, Size, Vec2},
     peniko::Color,
-    AaConfig,
     util::{RenderContext, RenderSurface},
-    Renderer, RendererOptions, Scene, AaSupport,
+    AaConfig, AaSupport, Renderer, RendererOptions, Scene,
 };
 use winit::{
     dpi::{LogicalPosition, PhysicalPosition},
@@ -41,6 +41,8 @@ pub use winit::{
     event::{ElementState, MouseButton, VirtualKeyCode},
     event_loop::ControlFlow,
 };
+
+mod text;
 
 /// Events that you can use to update your internal state.
 #[non_exhaustive]
@@ -135,11 +137,25 @@ impl Screen {
 pub struct RenderCtx<'a> {
     scene_builder: &'a mut SceneBuilder<'a>,
     screen: Screen,
+    text_ctx: &'a mut SimpleText,
 }
 
 impl<'a> RenderCtx<'a> {
     pub fn screen(&self) -> Screen {
         self.screen
+    }
+
+    pub fn draw_text(&mut self, size: f32, loc: impl Into<Point>, content: &str) {
+        let sf = self.screen.scale();
+        let position = Vec2::new(0., f64::from(size) * sf) + loc.into().to_vec2();
+        self.text_ctx.add(
+            self.scene_builder,
+            None,
+            size,
+            None,
+            Affine::scale(sf).then_translate(position),
+            content,
+        )
     }
 }
 
@@ -168,6 +184,7 @@ pub trait AppLogic {
 pub struct App<T> {
     logic: T,
     screen: Option<Screen>,
+    text: SimpleText,
 }
 
 impl<T: 'static + Default> App<T> {
@@ -181,6 +198,7 @@ impl<T: 'static> App<T> {
         Self {
             logic: user_data,
             screen: None,
+            text: SimpleText::new(),
         }
     }
 }
@@ -205,6 +223,10 @@ impl<T: AppLogic + 'static> App<T> {
                     .take()
                     .unwrap_or_else(|| create_window(event_loop));
                 let size = window.inner_size();
+                self.screen = Some(Screen {
+                    phy_size: Size::new(size.width as f64, size.height as f64),
+                    scale_factor: window.scale_factor(),
+                });
                 let surface_future = render_cx.create_surface(&window, size.width, size.height);
                 // We need to block here, in case a Suspended event appeared
                 let Ok(surface) = pollster::block_on(surface_future) else {
@@ -273,6 +295,7 @@ impl<T: AppLogic + 'static> App<T> {
                 let mut ctx = RenderCtx {
                     scene_builder: &mut builder,
                     screen: s,
+                    text_ctx: &mut self.text,
                 };
                 self.logic.render(&mut ctx);
 

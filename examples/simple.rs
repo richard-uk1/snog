@@ -13,10 +13,10 @@ fn main() {
 struct Data {
     lines: Vec<(Line, Color)>,
 }
+const NUM: usize = 1_000;
 
 impl Data {
     fn new() -> Self {
-        const NUM: usize = 1_000;
         let mut lines = Vec::with_capacity(NUM);
         let mut rng = rand::thread_rng();
         for _ in 0..NUM {
@@ -43,5 +43,6 @@ impl AppLogic for Data {
             let brush = Brush::Solid(color);
             ctx.stroke(&stroke, Affine::IDENTITY, &brush, None, &(scale * line));
         }
+        ctx.draw_text(12., (0., 0.), &format!("{NUM} lines"));
     }
 }
